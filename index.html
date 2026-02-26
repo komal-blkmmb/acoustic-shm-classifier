@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acoustic SHM Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070c14;
+    --surface: #0d1526;
+    --surface2: #111d33;
+    --border: #1e3056;
+    --accent: #00c8ff;
+    --accent2: #0066cc;
+    --green: #00e5a0;
+    --red: #ff4d6d;
+    --yellow: #ffd166;
+    --text: #c8daf5;
+    --text-dim: #5a7aaa;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(0,100,200,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(0,200,255,0.04) 0%, transparent 60%);
+  }
+
+  /* ── Header ── */
+  header {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+  .title-block h1 {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .title-block p {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 3px;
+    background: rgba(0,200,255,0.08);
+    border: 1px solid rgba(0,200,255,0.25);
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  /* ── Main layout ── */
+  .main { max-width: 1200px; margin: 0 auto; }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,200,255,0.04), transparent 70%);
+    pointer-events: none;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,200,255,0.04);
+  }
+  .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0.6;
+  }
+  .upload-zone h2 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .upload-zone p {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .upload-zone .mono-hint {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-top: 10px;
+    opacity: 0.8;
+  }
+  #fileInput { display: none; }
+
+  /* ── File summary ── */
+  #fileSummary {
+    display: none;
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+  }
+  .stat-card .label {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .stat-card .value {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .value.red { color: var(--red); }
+
+  .file-list-toggle {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--mono);
+    text-decoration: underline;
+    display: inline-block;
+    margin-top: 4px;
+  }
+  #fileListBox {
+    display: none;
+    margin-top: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    line-height: 1.8;
+    columns: 4;
+  }
+
+  /* ── Config panel ── */
+  .config-panel {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 28px;
+    align-items: end;
+  }
+  .config-group label {
+    display: block;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0,200,255,0.5);
+  }
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 40px;
+    text-align: right;
+  }
+  input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: var(--accent); }
+
+  /* ── Train button ── */
+  #trainBtn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  #trainBtn:hover { background: #33d4ff; box-shadow: 0 4px 20px rgba(0,200,255,0.3); }
+  #trainBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Progress ── */
+  #progressSection {
+    display: none;
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+  #progressLabel {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .progress-bar-bg {
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  #progressBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* ── Results ── */
+  #resultsSection {
+    display: none;
+    margin-top: 32px;
+  }
+  .results-header {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .model-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    animation: fadeUp 0.5s ease forwards;
+    opacity: 0;
+  }
+  .model-card:nth-child(2) { animation-delay: 0.15s; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .model-name {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .model-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    margin-bottom: 20px;
+  }
+
+  /* ── Accuracy pills ── */
+  .acc-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .acc-pill {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .acc-pill .p-label {
+    font-size: 0.62rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .acc-pill .p-val {
+    font-family: var(--mono);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .acc-pill.train .p-val { color: var(--text-dim); }
+  .acc-pill.test .p-val { color: var(--green); }
+
+  /* ── Confusion matrix ── */
+  .cm-title {
+    font-size: 0.65rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .cm-wrap {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .cm-table-wrap { flex: 1; }
+  .cm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+  .cm-table .cm-corner { width: 80px; }
+  .cm-table th {
+    padding: 6px 8px;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    font-weight: 400;
+  }
+  .cm-table .row-label {
+    text-align: right;
+    padding-right: 10px;
+    color: var(--text-dim);
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+  .cm-cell {
+    padding: 12px 8px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: default;
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .cm-cell:hover { transform: scale(1.05); }
+  .cm-cell .pct {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  /* ── Metrics table ── */
+  .metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    margin-top: 4px;
+  }
+  .metrics-table th {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    text-align: right;
+    font-weight: 400;
+    border-bottom: 1px solid var(--border);
+  }
+  .metrics-table th:first-child { text-align: left; }
+  .metrics-table td {
+    padding: 8px 8px;
+    text-align: right;
+    border-bottom: 1px solid rgba(30,48,86,0.5);
+    font-size: 0.72rem;
+  }
+  .metrics-table td:first-child {
+    text-align: left;
+    color: var(--text-dim);
+    font-size: 0.65rem;
+  }
+  .metrics-table tr.total td {
+    border-top: 1px solid var(--border);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .bar-cell { width: 80px; }
+  .metric-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-left: auto;
+    overflow: hidden;
+    width: 60px;
+  }
+  .metric-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .error-msg {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--red);
+    margin-top: 16px;
+    display: none;
+  }
+
+  /* ── Plate Grid ── */
+  .plate-section {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+  }
+  .plate-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .plate-section-header .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .plate-section-header .hint {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .plate-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-dot.healthy  { background: rgba(0,229,160,0.2); border: 1px solid rgba(0,229,160,0.5); }
+  .legend-dot.unhealthy { background: rgba(255,77,109,0.3); border: 1px solid rgba(255,77,109,0.7); }
+
+  .plate-grid-wrap {
+    display: inline-block;
+  }
+  .plate-col-headers {
+    display: grid;
+    grid-template-columns: 28px repeat(9, 44px);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .plate-col-headers span {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    line-height: 1;
+    padding: 2px 0;
+  }
+  .plate-row {
+    display: grid;
+    grid-template-columns: 28px repeat(9, 44px);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .plate-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+  }
+  .plate-cell {
+    width: 44px;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,229,160,0.3);
+    background: rgba(0,229,160,0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: rgba(0,229,160,0.7);
+    transition: all 0.15s ease;
+    user-select: none;
+    position: relative;
+  }
+  .plate-cell:hover {
+    transform: scale(1.08);
+    border-color: rgba(0,229,160,0.7);
+    background: rgba(0,229,160,0.15);
+    z-index: 2;
+  }
+  .plate-cell.unhealthy {
+    background: rgba(255,77,109,0.2);
+    border: 1px solid rgba(255,77,109,0.7);
+    color: rgba(255,77,109,0.9);
+    box-shadow: 0 0 8px rgba(255,77,109,0.2);
+  }
+  .plate-cell.unhealthy:hover {
+    background: rgba(255,77,109,0.3);
+    border-color: var(--red);
+  }
+  .plate-cell .x-mark {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+    color: var(--red);
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .plate-cell.unhealthy .x-mark { display: block; }
+  .plate-cell.unhealthy .cell-id { opacity: 0.5; font-size: 0.55rem; position: absolute; bottom: 3px; right: 4px; }
+  .plate-cell:not(.unhealthy) .cell-id { opacity: 0.7; }
+
+  .plate-summary {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+  }
+  .plate-summary span { color: var(--red); font-weight: 700; }
+  .plate-clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 12px;
+  }
+  .plate-clear-btn:hover { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>// ACOUSTIC SHM CLASSIFIER</h1>
+    <p>KNN &amp; Decision Tree &mdash; Sandwiched Composite Plate Analysis</p>
+  </div>
+  <div class="badge">ML HW2</div>
+</header>
+
+<div class="main">
+
+  <!-- Step 1: Plate Grid -->
+  <div class="plate-section">
+    <div class="plate-section-header">
+      <span class="label">Step 1 — Mark Unhealthy Cells</span>
+      <span class="hint">Click any cell to toggle healthy ↔ unhealthy</span>
+    </div>
+    <div class="plate-legend">
+      <div class="legend-item"><div class="legend-dot healthy"></div>Healthy</div>
+      <div class="legend-item"><div class="legend-dot unhealthy"></div>Unhealthy (debonded)</div>
+    </div>
+    <div class="plate-grid-wrap">
+      <div class="plate-col-headers" id="colHeaders"></div>
+      <div id="plateGrid"></div>
+    </div>
+    <div class="plate-summary">
+      Unhealthy cells selected: <span id="unhealthyCount">0</span>
+      <button class="plate-clear-btn" onclick="clearPlate()">clear all</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Upload -->
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <span class="upload-icon">⬡</span>
+    <h2>Step 2 — Drop .wav files here or click to select</h2>
+    <p>Accepts multiple files at once &nbsp;·&nbsp; Filenames: <code>1d_hit1.wav</code> or <code>s_1_d.wav</code></p>
+    <input type="file" id="fileInput" accept=".wav" multiple>
+  </div>
+
+  <div id="errorMsg" class="error-msg"></div>
+
+  <!-- File summary -->
+  <div id="fileSummary">
+    <div class="summary-grid">
+      <div class="stat-card">
+        <div class="label">Total Files</div>
+        <div class="value" id="statTotal">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Healthy</div>
+        <div class="value green" id="statHealthy">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Unhealthy</div>
+        <div class="value red" id="statUnhealthy">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Cells Found</div>
+        <div class="value" id="statCells">0</div>
+      </div>
+    </div>
+    <span class="file-list-toggle" onclick="toggleFileList()">▸ show file list</span>
+    <div id="fileListBox"></div>
+  </div>
+
+  <!-- Step 3: Config -->
+  <div class="config-panel">
+    <div class="config-group">
+      <label>Train / Test Split</label>
+      <div class="slider-wrap">
+        <input type="range" id="splitSlider" min="50" max="90" value="70" step="5" oninput="updateSplit(this.value)">
+        <span class="slider-val" id="splitVal">70% / 30%</span>
+      </div>
+    </div>
+    <div class="config-group">
+      <label>KNN — k value</label>
+      <input type="number" id="kVal" value="5" min="1" max="20">
+    </div>
+    <div class="config-group">
+      <label>Random Seed</label>
+      <input type="number" id="seedVal" value="42" min="0" max="9999">
+    </div>
+    <button id="trainBtn" onclick="runTraining()" disabled>▶ TRAIN</button>
+  </div>
+
+  <!-- Progress -->
+  <div id="progressSection">
+    <div id="progressLabel">Initializing…</div>
+    <div class="progress-bar-bg"><div id="progressBar"></div></div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection">
+    <div class="results-header">// Classification Results</div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  PLATE GRID
+// ═══════════════════════════════════════════════
+const ROWS = ['1','2','3'];
+const COLS = ['a','b','c','d','e','f','g','h','i'];
+let unhealthySet = new Set(); // driven by plate UI
+
+function buildPlateGrid() {
+  // Column headers
+  const colHdr = document.getElementById('colHeaders');
+  colHdr.innerHTML = '<span></span>'; // spacer for row label column
+  COLS.forEach(c => {
+    const s = document.createElement('span');
+    s.textContent = c;
+    colHdr.appendChild(s);
+  });
+
+  // Rows
+  const grid = document.getElementById('plateGrid');
+  grid.innerHTML = '';
+  ROWS.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'plate-row';
+
+    const rl = document.createElement('div');
+    rl.className = 'plate-row-label';
+    rl.textContent = r;
+    row.appendChild(rl);
+
+    COLS.forEach(c => {
+      const cellId = r + c;
+      const cell = document.createElement('div');
+      cell.className = 'plate-cell';
+      cell.dataset.cell = cellId;
+      cell.innerHTML = `<span class="x-mark">✕</span><span class="cell-id">${cellId}</span>`;
+      cell.addEventListener('click', () => toggleCell(cellId, cell));
+      row.appendChild(cell);
+    });
+
+    grid.appendChild(row);
+  });
+}
+
+function toggleCell(cellId, el) {
+  if (unhealthySet.has(cellId)) {
+    unhealthySet.delete(cellId);
+    el.classList.remove('unhealthy');
+  } else {
+    unhealthySet.add(cellId);
+    el.classList.add('unhealthy');
+  }
+  document.getElementById('unhealthyCount').textContent = unhealthySet.size;
+  // Re-label loaded files if any
+  if (loadedFiles.length > 0) relabelFiles();
+}
+
+function clearPlate() {
+  unhealthySet.clear();
+  document.querySelectorAll('.plate-cell').forEach(el => el.classList.remove('unhealthy'));
+  document.getElementById('unhealthyCount').textContent = '0';
+  if (loadedFiles.length > 0) relabelFiles();
+}
+
+function relabelFiles() {
+  let healthy = 0, unhealthy = 0;
+  loadedFiles.forEach(f => {
+    f.label = unhealthySet.has(f.cell) ? 1 : 0;
+    if (f.label === 0) healthy++; else unhealthy++;
+    // update color in file list
+  });
+  document.getElementById('statHealthy').textContent = healthy;
+  document.getElementById('statUnhealthy').textContent = unhealthy;
+}
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+const SR_TARGET = 48000;
+const TAP_SECS  = 0.20;
+const N_SAMPLES = SR_TARGET * TAP_SECS;
+
+function parseName(fname) {
+  // Pattern 1: 1d_hit1.wav
+  let m = fname.match(/^([1-3][a-i])_hit\d+\.wav$/i);
+  if (m) return m[1].toLowerCase();
+  // Pattern 2: s_1_d.wav  or  s_1_d_1.wav
+  m = fname.match(/^s_([1-3])_([a-i])(?:_\d+)?\.wav$/i);
+  if (m) return `${m[1]}${m[2].toLowerCase()}`;
+  return null;
+}
+
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function shuffle(arr, rng) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function stratifiedSplit(X, y, testRatio, seed) {
+  const rng = mulberry32(seed);
+  const classes = [...new Set(y)];
+  const trainIdx = [], testIdx = [];
+  for (const cls of classes) {
+    const idx = y.map((v,i)=>v===cls?i:-1).filter(i=>i>=0);
+    shuffle(idx, rng);
+    const nTest = Math.round(idx.length * testRatio);
+    idx.slice(0, nTest).forEach(i => testIdx.push(i));
+    idx.slice(nTest).forEach(i => trainIdx.push(i));
+  }
+  return { trainIdx, testIdx };
+}
+
+// ═══════════════════════════════════════════════
+//  SIGNAL PROCESSING
+// ═══════════════════════════════════════════════
+
+// In-place Cooley-Tukey FFT (n must be power of 2)
+function fftInPlace(re, im) {
+  const n = re.length;
+  // Bit-reversal
+  let j = 0;
+  for (let i = 1; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  // Butterfly
+  for (let len = 2; len <= n; len <<= 1) {
+    const half = len >> 1;
+    const wAngle = -2 * Math.PI / len;
+    const wRe = Math.cos(wAngle), wIm = Math.sin(wAngle);
+    for (let i = 0; i < n; i += len) {
+      let curRe = 1, curIm = 0;
+      for (let k = 0; k < half; k++) {
+        const uRe = re[i+k], uIm = im[i+k];
+        const vRe = re[i+k+half]*curRe - im[i+k+half]*curIm;
+        const vIm = re[i+k+half]*curIm + im[i+k+half]*curRe;
+        re[i+k]      = uRe + vRe; im[i+k]      = uIm + vIm;
+        re[i+k+half] = uRe - vRe; im[i+k+half] = uIm - vIm;
+        const newRe = curRe*wRe - curIm*wIm;
+        curIm = curRe*wIm + curIm*wRe;
+        curRe = newRe;
+      }
+    }
+  }
+}
+
+// Welch PSD → first nBins bins, log1p compressed
+function welchPSD(signal, sr, nBins = 128, nperseg = 512) {
+  const hop = nperseg >> 1;
+  const window = new Float64Array(nperseg);
+  for (let i = 0; i < nperseg; i++)
+    window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (nperseg - 1)));
+  const psd = new Float64Array(nperseg >> 1);
+  let count = 0;
+  for (let start = 0; start + nperseg <= signal.length; start += hop) {
+    const re = new Float64Array(nperseg), im = new Float64Array(nperseg);
+    for (let i = 0; i < nperseg; i++) re[i] = signal[start + i] * window[i];
+    fftInPlace(re, im);
+    for (let i = 0; i < nperseg >> 1; i++)
+      psd[i] += re[i]*re[i] + im[i]*im[i];
+    count++;
+  }
+  const result = new Float64Array(nBins);
+  for (let i = 0; i < nBins; i++)
+    result[i] = Math.log1p(psd[i] / (count || 1));
+  return result;
+}
+
+// Mel filterbank helper
+function hzToMel(hz) { return 2595 * Math.log10(1 + hz / 700); }
+function melToHz(mel) { return 700 * (Math.pow(10, mel / 2595) - 1); }
+
+function buildMelFilterbank(nFilters, nFft, sr) {
+  const fMin = 0, fMax = sr / 2;
+  const melMin = hzToMel(fMin), melMax = hzToMel(fMax);
+  const melPoints = new Array(nFilters + 2);
+  for (let i = 0; i < nFilters + 2; i++)
+    melPoints[i] = melMin + i * (melMax - melMin) / (nFilters + 1);
+  const freqPoints = melPoints.map(melToHz);
+  const fftFreqs = new Array(nFft);
+  for (let i = 0; i < nFft; i++) fftFreqs[i] = i * sr / (2 * nFft);
+  const filters = [];
+  for (let m = 1; m <= nFilters; m++) {
+    const filt = new Float64Array(nFft);
+    for (let k = 0; k < nFft; k++) {
+      const f = fftFreqs[k];
+      if (f >= freqPoints[m-1] && f <= freqPoints[m])
+        filt[k] = (f - freqPoints[m-1]) / (freqPoints[m] - freqPoints[m-1]);
+      else if (f >= freqPoints[m] && f <= freqPoints[m+1])
+        filt[k] = (freqPoints[m+1] - f) / (freqPoints[m+1] - freqPoints[m]);
+    }
+    filters.push(filt);
+  }
+  return filters;
+}
+
+// DCT-II for MFCC (returns first nKeep coefficients)
+function dct(x, nKeep) {
+  const N = x.length;
+  const out = new Float64Array(nKeep);
+  for (let k = 0; k < nKeep; k++) {
+    let s = 0;
+    for (let n = 0; n < N; n++) s += x[n] * Math.cos(Math.PI * k * (2*n+1) / (2*N));
+    out[k] = s;
+  }
+  return out;
+}
+
+// Extract 13 MFCC mean + 13 MFCC std = 26 features
+function extractMFCC(signal, sr, nMfcc = 13, frameLen = 512, hopLen = 160, nMelFilters = 26) {
+  const window = new Float64Array(frameLen);
+  for (let i = 0; i < frameLen; i++)
+    window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (frameLen - 1)));
+  const filters = buildMelFilterbank(nMelFilters, frameLen >> 1, sr);
+  const frames = [];
+  for (let start = 0; start + frameLen <= signal.length; start += hopLen) {
+    const re = new Float64Array(frameLen), im = new Float64Array(frameLen);
+    for (let i = 0; i < frameLen; i++) re[i] = signal[start + i] * window[i];
+    fftInPlace(re, im);
+    // Mel energies
+    const melE = new Float64Array(nMelFilters);
+    for (let m = 0; m < nMelFilters; m++) {
+      let e = 0;
+      for (let k = 0; k < frameLen >> 1; k++) {
+        const power = (re[k]*re[k] + im[k]*im[k]);
+        e += filters[m][k] * power;
+      }
+      melE[m] = Math.log(Math.max(e, 1e-10));
+    }
+    frames.push(dct(melE, nMfcc));
+  }
+  if (frames.length === 0) return new Float64Array(nMfcc * 2);
+  // Mean and std over time frames
+  const mean = new Float64Array(nMfcc), std = new Float64Array(nMfcc);
+  for (const f of frames) for (let i = 0; i < nMfcc; i++) mean[i] += f[i];
+  for (let i = 0; i < nMfcc; i++) mean[i] /= frames.length;
+  for (const f of frames) for (let i = 0; i < nMfcc; i++) std[i] += (f[i]-mean[i])**2;
+  for (let i = 0; i < nMfcc; i++) std[i] = Math.sqrt(std[i] / frames.length);
+  return Float64Array.from([...mean, ...std]);
+}
+
+// Fix signal length
+function fixLength(signal, n) {
+  if (signal.length >= n) return signal.slice(0, n);
+  const out = new Float64Array(n);
+  out.set(signal);
+  return out;
+}
+
+// Resample using linear interpolation
+function resample(signal, fromSr, toSr) {
+  if (fromSr === toSr) return signal;
+  const ratio = fromSr / toSr;
+  const newLen = Math.round(signal.length * toSr / fromSr);
+  const out = new Float64Array(newLen);
+  for (let i = 0; i < newLen; i++) {
+    const pos = i * ratio;
+    const lo = Math.floor(pos), hi = Math.min(lo + 1, signal.length - 1);
+    out[i] = signal[lo] + (pos - lo) * (signal[hi] - signal[lo]);
+  }
+  return out;
+}
+
+// Full feature extraction
+function extractFeatures(signal, sr) {
+  // Resample if needed
+  if (sr !== SR_TARGET) signal = resample(signal, sr, SR_TARGET);
+  // Mean-center and normalize
+  let mean = 0;
+  for (let i = 0; i < signal.length; i++) mean += signal[i];
+  mean /= signal.length;
+  let maxAbs = 0;
+  for (let i = 0; i < signal.length; i++) { signal[i] -= mean; maxAbs = Math.max(maxAbs, Math.abs(signal[i])); }
+  if (maxAbs > 0) for (let i = 0; i < signal.length; i++) signal[i] /= maxAbs;
+  // Fix length
+  signal = fixLength(signal, N_SAMPLES);
+  const psd  = welchPSD(signal, SR_TARGET, 128, 512);
+  const mfcc = extractMFCC(signal, SR_TARGET, 13);
+  const out  = new Float64Array(154);
+  out.set(psd, 0);
+  out.set(mfcc, 128);
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+//  KNN CLASSIFIER
+// ═══════════════════════════════════════════════
+class KNN {
+  constructor(k = 5) { this.k = k; }
+  fit(X, y) { this.X = X; this.y = y; }
+  predictOne(x) {
+    const dists = this.X.map((xi, i) => {
+      let d = 0;
+      for (let j = 0; j < x.length; j++) d += (x[j]-xi[j])**2;
+      return [d, this.y[i]];
+    });
+    dists.sort((a,b) => a[0]-b[0]);
+    const votes = {};
+    for (let i = 0; i < this.k; i++) {
+      const c = dists[i][1];
+      votes[c] = (votes[c]||0) + 1;
+    }
+    return parseInt(Object.entries(votes).reduce((a,b) => a[1]>b[1]?a:b)[0]);
+  }
+  predict(X) { return X.map(x => this.predictOne(x)); }
+}
+
+// ═══════════════════════════════════════════════
+//  DECISION TREE (CART with Gini)
+// ═══════════════════════════════════════════════
+class DecisionTree {
+  constructor(maxDepth = Infinity, minSamplesSplit = 2) {
+    this.maxDepth = maxDepth;
+    this.minSamplesSplit = minSamplesSplit;
+  }
+  gini(counts, n) {
+    if (n === 0) return 0;
+    let g = 1;
+    for (const c of Object.values(counts)) g -= (c/n)**2;
+    return g;
+  }
+  bestSplit(X, y) {
+    const n = X.length, nF = X[0].length;
+    let bestG = Infinity, bestF = -1, bestT = 0;
+    for (let f = 0; f < nF; f++) {
+      const sorted = X.map((xi,i)=>[xi[f],i]).sort((a,b)=>a[0]-b[0]);
+      // Sliding counts
+      const lC = {0:0,1:0}, rC = {0:0,1:0};
+      for (const [,i] of sorted) rC[y[i]]++;
+      let lN = 0, rN = n;
+      // Sample up to 30 unique thresholds
+      const step = Math.max(1, Math.floor(sorted.length / 30));
+      for (let ti = 0; ti < sorted.length - 1; ti++) {
+        const idx = sorted[ti][1];
+        lC[y[idx]]++; rC[y[idx]]--; lN++; rN--;
+        if (ti % step !== 0) continue;
+        if (sorted[ti][0] === sorted[ti+1][0]) continue;
+        const g = (lN*this.gini(lC,lN) + rN*this.gini(rC,rN)) / n;
+        if (g < bestG) {
+          bestG = g;
+          bestF = f;
+          bestT = (sorted[ti][0] + sorted[ti+1][0]) / 2;
+        }
+      }
+    }
+    return {feature:bestF, threshold:bestT, gini:bestG};
+  }
+  majorityClass(y) {
+    const c = {};
+    for (const l of y) c[l]=(c[l]||0)+1;
+    return parseInt(Object.entries(c).reduce((a,b)=>a[1]>b[1]?a:b)[0]);
+  }
+  buildTree(X, y, depth) {
+    const classes = new Set(y);
+    if (classes.size === 1 || y.length < this.minSamplesSplit || depth >= this.maxDepth)
+      return {leaf: true, label: this.majorityClass(y)};
+    const {feature, threshold, gini} = this.bestSplit(X, y);
+    if (feature === -1 || gini === 0) return {leaf:true, label:this.majorityClass(y)};
+    const lX=[],lY=[],rX=[],rY=[];
+    for (let i=0;i<X.length;i++) {
+      if (X[i][feature] <= threshold) { lX.push(X[i]); lY.push(y[i]); }
+      else { rX.push(X[i]); rY.push(y[i]); }
+    }
+    if (lX.length===0 || rX.length===0) return {leaf:true, label:this.majorityClass(y)};
+    return {
+      leaf:false, feature, threshold,
+      left:  this.buildTree(lX, lY, depth+1),
+      right: this.buildTree(rX, rY, depth+1),
+    };
+  }
+  fit(X, y) { this.root = this.buildTree(X, y, 0); }
+  predictOne(node, x) {
+    if (node.leaf) return node.label;
+    return x[node.feature] <= node.threshold
+      ? this.predictOne(node.left, x)
+      : this.predictOne(node.right, x);
+  }
+  predict(X) { return X.map(x => this.predictOne(this.root, x)); }
+}
+
+// ═══════════════════════════════════════════════
+//  METRICS
+// ═══════════════════════════════════════════════
+function computeMetrics(yTrue, yPred) {
+  // Binary: 0=healthy, 1=unhealthy
+  let TP=0,TN=0,FP=0,FN=0;
+  for (let i=0;i<yTrue.length;i++) {
+    if (yTrue[i]===1&&yPred[i]===1) TP++;
+    else if (yTrue[i]===0&&yPred[i]===0) TN++;
+    else if (yTrue[i]===0&&yPred[i]===1) FP++;
+    else FN++;
+  }
+  const precision = TP/(TP+FP)||0;
+  const recall    = TP/(TP+FN)||0;
+  const f1        = 2*precision*recall/(precision+recall)||0;
+  const acc       = (TP+TN)/(TP+TN+FP+FN);
+  // Per-class
+  const precH = TN/(TN+FN)||0, recH = TN/(TN+FP)||0;
+  const f1H   = 2*precH*recH/(precH+recH)||0;
+  return {TP,TN,FP,FN,acc,
+    classes: [
+      {name:'Healthy',  prec:precH,  rec:recH,  f1:f1H,  support:TN+FP},
+      {name:'Unhealthy',prec:precision,rec:recall,f1,support:TP+FN},
+    ]
+  };
+}
+
+// ═══════════════════════════════════════════════
+//  AUDIO DECODING
+// ═══════════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SR_TARGET });
+  return audioCtx;
+}
+
+async function decodeWav(file) {
+  const buf = await file.arrayBuffer();
+  const ctx = getAudioCtx();
+  const decoded = await ctx.decodeAudioData(buf);
+  // Mix down to mono
+  let signal;
+  if (decoded.numberOfChannels === 1) {
+    signal = new Float64Array(decoded.getChannelData(0));
+  } else {
+    const ch0 = decoded.getChannelData(0), ch1 = decoded.getChannelData(1);
+    signal = new Float64Array(ch0.length);
+    for (let i=0;i<ch0.length;i++) signal[i] = (ch0[i]+ch1[i])/2;
+  }
+  return {signal, sr: decoded.sampleRate};
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let loadedFiles = [];
+
+// ═══════════════════════════════════════════════
+//  UI HANDLERS
+// ═══════════════════════════════════════════════
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+function handleFiles(files) {
+  const wavFiles = files.filter(f => f.name.toLowerCase().endsWith('.wav'));
+  if (wavFiles.length === 0) { showError('No .wav files found in selection.'); return; }
+  hideError();
+  loadedFiles = [];
+  const cells = new Set();
+  let healthy = 0, unhealthy = 0;
+  const fileListBox = document.getElementById('fileListBox');
+  fileListBox.innerHTML = '';
+  for (const f of wavFiles) {
+    const cell = parseName(f.name);
+    if (!cell) { console.warn('Skipping:', f.name); continue; }
+    const label = unhealthySet.has(cell) ? 1 : 0;
+    loadedFiles.push({file: f, cell, label});
+    cells.add(cell);
+    if (label===0) healthy++; else unhealthy++;
+    const span = document.createElement('span');
+    span.textContent = f.name + ' ';
+    span.style.color = label===1 ? 'var(--red)' : 'var(--green)';
+    fileListBox.appendChild(span);
+  }
+  if (loadedFiles.length === 0) { showError('No files matched expected naming pattern. Expected: 1d_hit1.wav or s_1_d.wav'); return; }
+  document.getElementById('statTotal').textContent = loadedFiles.length;
+  document.getElementById('statHealthy').textContent = healthy;
+  document.getElementById('statUnhealthy').textContent = unhealthy;
+  document.getElementById('statCells').textContent = cells.size;
+  document.getElementById('fileSummary').style.display = 'block';
+  document.getElementById('trainBtn').disabled = false;
+  document.getElementById('resultsSection').style.display = 'none';
+}
+
+function toggleFileList() {
+  const box = document.getElementById('fileListBox');
+  const toggle = document.querySelector('.file-list-toggle');
+  if (box.style.display === 'none' || !box.style.display) {
+    box.style.display = 'block';
+    toggle.textContent = '▾ hide file list';
+  } else {
+    box.style.display = 'none';
+    toggle.textContent = '▸ show file list';
+  }
+}
+
+function updateSplit(v) {
+  document.getElementById('splitVal').textContent = `${v}% / ${100-v}%`;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+
+// yield control back to browser
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════
+//  MAIN TRAINING PIPELINE
+// ═══════════════════════════════════════════════
+async function runTraining() {
+  if (unhealthySet.size === 0) { showError('Please mark at least one unhealthy cell on the plate grid before training.'); return; }
+  if (loadedFiles.length < 10) { showError('Need at least 10 samples to train.'); return; }
+  const btn = document.getElementById('trainBtn');
+  btn.disabled = true;
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+
+  const testRatio  = 1 - parseInt(document.getElementById('splitSlider').value) / 100;
+  const k          = parseInt(document.getElementById('kVal').value) || 5;
+  const seed       = parseInt(document.getElementById('seedVal').value) || 42;
+
+  // === STEP 1: Decode + Feature Extraction ===
+  const total = loadedFiles.length;
+  const X = [], y = [];
+  for (let i = 0; i < total; i++) {
+    if (i % 5 === 0) {
+      setProgress(Math.round(i/total*50), `Extracting features… ${i}/${total}`);
+      await sleep(0);
+    }
+    try {
+      const {signal, sr} = await decodeWav(loadedFiles[i].file);
+      const feat = extractFeatures(new Float64Array(signal), sr);
+      X.push(feat);
+      y.push(loadedFiles[i].label);
+    } catch(e) {
+      console.error('Failed:', loadedFiles[i].file.name, e);
+    }
+  }
+  setProgress(50, `Features extracted. Splitting dataset…`);
+  await sleep(10);
+
+  // === STEP 2: Split ===
+  const {trainIdx, testIdx} = stratifiedSplit(X, y, testRatio, seed);
+  const X_train = trainIdx.map(i=>X[i]), y_train = trainIdx.map(i=>y[i]);
+  const X_test  = testIdx.map(i=>X[i]),  y_test  = testIdx.map(i=>y[i]);
+
+  setProgress(55, `Training KNN (k=${k})…`);
+  await sleep(10);
+
+  // === STEP 3: KNN ===
+  const knn = new KNN(k);
+  knn.fit(X_train, y_train);
+  const knnTrainPred = knn.predict(X_train);
+  setProgress(65, `Running KNN on test set…`);
+  await sleep(0);
+  const knnTestPred  = knn.predict(X_test);
+
+  setProgress(70, `Training Decision Tree…`);
+  await sleep(10);
+
+  // === STEP 4: DT ===
+  const dt = new DecisionTree(Infinity, 2);
+  dt.fit(X_train, y_train);
+  const dtTrainPred = dt.predict(X_train);
+  setProgress(92, `Running DT on test set…`);
+  await sleep(0);
+  const dtTestPred = dt.predict(X_test);
+
+  setProgress(98, `Computing metrics…`);
+  await sleep(10);
+
+  // === STEP 5: Results ===
+  const results = [
+    {
+      name: `KNN`,
+      subtitle: `K-Nearest Neighbors · k = ${k}`,
+      train: computeMetrics(y_train, knnTrainPred),
+      test:  computeMetrics(y_test,  knnTestPred),
+    },
+    {
+      name: `DT`,
+      subtitle: `Decision Tree (CART · Gini · Full Depth)`,
+      train: computeMetrics(y_train, dtTrainPred),
+      test:  computeMetrics(y_test,  dtTestPred),
+    }
+  ];
+
+  setProgress(100, `Done.`);
+  await sleep(200);
+
+  renderResults(results, trainIdx.length, testIdx.length);
+  document.getElementById('progressSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER RESULTS
+// ═══════════════════════════════════════════════
+function cmCellColor(val, max, isDiag) {
+  const ratio = max > 0 ? val / max : 0;
+  if (isDiag) {
+    const r = Math.round(0 + (0)*ratio);
+    const g = Math.round(50 + (150)*ratio);
+    const b = Math.round(50 + (100)*ratio);
+    return `rgba(${r},${g+80},${b+50}, ${0.15 + ratio * 0.55})`;
+  } else {
+    return `rgba(255,77,109, ${0.05 + ratio * 0.45})`;
+  }
+}
+
+function pct(v, dec=1) { return (v*100).toFixed(dec) + '%'; }
+
+function renderResults(results, nTrain, nTest) {
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  for (const r of results) {
+    const card = document.createElement('div');
+    card.className = 'model-card';
+
+    const maxCM = Math.max(r.test.TP, r.test.TN, r.test.FP, r.test.FN);
+
+    card.innerHTML = `
+      <div class="model-name">// ${r.name}</div>
+      <div class="model-subtitle">${r.subtitle} &nbsp;·&nbsp; train ${nTrain} / test ${nTest}</div>
+
+      <div class="acc-row">
+        <div class="acc-pill train">
+          <div class="p-label">Train Accuracy</div>
+          <div class="p-val">${pct(r.train.acc)}</div>
+        </div>
+        <div class="acc-pill test">
+          <div class="p-label">Test Accuracy</div>
+          <div class="p-val">${pct(r.test.acc)}</div>
+        </div>
+      </div>
+
+      <div class="cm-title">Confusion Matrix — Test Set</div>
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th class="cm-corner"></th>
+            <th colspan="2" style="color:var(--text-dim);font-size:0.6rem;">Predicted</th>
+          </tr>
+          <tr>
+            <th class="cm-corner"></th>
+            <th>Healthy</th>
+            <th>Unhealthy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Actual<br>Healthy</td>
+            <td class="cm-cell" style="background:${cmCellColor(r.test.TN, maxCM, true)}">
+              ${r.test.TN}<span class="pct">${pct(r.test.TN/(r.test.TN+r.test.FP))}</span>
+            </td>
+            <td class="cm-cell" style="background:${cmCellColor(r.test.FP, maxCM, false)}">
+              ${r.test.FP}<span class="pct">${pct(r.test.FP/(r.test.TN+r.test.FP))}</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="row-label">Actual<br>Unhealthy</td>
+            <td class="cm-cell" style="background:${cmCellColor(r.test.FN, maxCM, false)}">
+              ${r.test.FN}<span class="pct">${pct(r.test.FN/(r.test.TP+r.test.FN))}</span>
+            </td>
+            <td class="cm-cell" style="background:${cmCellColor(r.test.TP, maxCM, true)}">
+              ${r.test.TP}<span class="pct">${pct(r.test.TP/(r.test.TP+r.test.FN))}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <br>
+      <div class="cm-title">Metrics — Test Set</div>
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Class</th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th><th class="bar-cell"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${r.test.classes.map(c => `
+          <tr>
+            <td>${c.name}</td>
+            <td>${pct(c.prec)}</td>
+            <td>${pct(c.rec)}</td>
+            <td>${pct(c.f1)}</td>
+            <td>${c.support}</td>
+            <td><div class="metric-bar"><div class="metric-bar-fill" style="width:${pct(c.f1)}"></div></div></td>
+          </tr>`).join('')}
+          <tr class="total">
+            <td>Accuracy</td><td colspan="3">${pct(r.test.acc)}</td><td>${nTest}</td><td></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// Init
+buildPlateGrid();
+</script>
+</body>
+</html>
