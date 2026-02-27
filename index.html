@@ -479,6 +479,220 @@
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* ── Live Classifier ── */
+  .classify-section {
+    margin-top: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .classify-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+  .classify-header-left { display: flex; flex-direction: column; gap: 4px; }
+  .classify-header .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .classify-header .sublabel {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .classify-body { padding: 24px 28px; }
+
+  .classify-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 20px;
+    align-items: end;
+    margin-bottom: 24px;
+  }
+  .classify-upload-box {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface2);
+    position: relative;
+  }
+  .classify-upload-box:hover { border-color: var(--accent); background: rgba(0,200,255,0.03); }
+  .classify-upload-box.has-file { border-color: var(--green); background: rgba(0,229,160,0.04); }
+  .classify-upload-box .cu-icon { font-size: 1.4rem; margin-bottom: 6px; display: block; opacity: 0.5; }
+  .classify-upload-box p { font-size: 0.72rem; color: var(--text-dim); font-family: var(--mono); }
+  .classify-upload-box .cu-filename {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--green);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #classifyFileInput { display: none; }
+
+  .model-select-group label {
+    display: block;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .model-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .model-toggle button {
+    flex: 1;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .model-toggle button.active {
+    background: rgba(0,200,255,0.12);
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+  }
+  .model-toggle button:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.03); }
+
+  #classifyBtn {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+    align-self: end;
+  }
+  #classifyBtn:hover { background: #33f0b8; box-shadow: 0 4px 20px rgba(0,229,160,0.3); }
+  #classifyBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Result display */
+  #classifyResult {
+    display: none;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    animation: fadeUp 0.4s ease forwards;
+  }
+  .result-banner {
+    padding: 28px 28px 22px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .result-banner.healthy  { background: rgba(0,229,160,0.08); border-bottom: 1px solid rgba(0,229,160,0.2); }
+  .result-banner.unhealthy { background: rgba(255,77,109,0.08); border-bottom: 1px solid rgba(255,77,109,0.2); }
+  .result-icon { font-size: 2.2rem; line-height: 1; }
+  .result-verdict { flex: 1; }
+  .result-verdict .verdict-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .result-verdict .verdict-class {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .result-verdict .verdict-class.healthy  { color: var(--green); }
+  .result-verdict .verdict-class.unhealthy { color: var(--red); }
+  .result-verdict .verdict-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-family: var(--mono);
+  }
+  .result-confidence {
+    text-align: right;
+  }
+  .result-confidence .conf-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .result-confidence .conf-val {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  .conf-val.healthy  { color: var(--green); }
+  .conf-val.unhealthy { color: var(--red); }
+
+  .result-features {
+    padding: 16px 28px 20px;
+    background: var(--surface2);
+  }
+  .feat-title {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .feat-bars {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .feat-bar-item { display: flex; flex-direction: column; gap: 4px; }
+  .feat-bar-label { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); display: flex; justify-content: space-between; }
+  .feat-bar-bg { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .feat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .feat-bar-fill.psd-bar  { background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .feat-bar-fill.mfcc-bar { background: linear-gradient(90deg, #8833ff, #cc66ff); }
+
+  .classify-not-trained {
+    padding: 20px;
+    background: rgba(255,209,102,0.07);
+    border: 1px solid rgba(255,209,102,0.2);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--yellow);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -743,6 +957,67 @@
   <div id="resultsSection">
     <div class="results-header">// Classification Results</div>
     <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
+  <!-- Step 4: Live Classifier -->
+  <div class="classify-section" id="classifySection">
+    <div class="classify-header">
+      <div class="classify-header-left">
+        <span class="label">Step 4 — Live Classifier</span>
+        <span class="sublabel">Upload a single tap recording and classify it using the trained model</span>
+      </div>
+      <div class="badge">INFERENCE</div>
+    </div>
+    <div class="classify-body">
+
+      <div id="classifyNotTrained" class="classify-not-trained">
+        ⚠ &nbsp; Train a model first (Step 3) before classifying new samples.
+      </div>
+
+      <div id="classifyControls" style="display:none;">
+        <div class="classify-controls">
+          <div>
+            <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Audio File</div>
+            <div class="classify-upload-box" id="classifyDropZone" onclick="document.getElementById('classifyFileInput').click()">
+              <span class="cu-icon">🎵</span>
+              <p>Drop .wav file or click to select</p>
+              <div class="cu-filename" id="classifyFileName"></div>
+            </div>
+            <input type="file" id="classifyFileInput" accept=".wav">
+          </div>
+
+          <div class="model-select-group">
+            <label>Model</label>
+            <div class="model-toggle">
+              <button class="active" id="btnKNN" onclick="selectModel('knn')">KNN (k=5)</button>
+              <button id="btnDT" onclick="selectModel('dt')">Decision Tree</button>
+            </div>
+          </div>
+
+          <button id="classifyBtn" onclick="classifySingle()" disabled>⚡ CLASSIFY</button>
+        </div>
+
+        <div id="classifyResult">
+          <div class="result-banner" id="resultBanner">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-verdict">
+              <div class="verdict-label">Classification Result</div>
+              <div class="verdict-class" id="resultClass"></div>
+              <div class="verdict-sub" id="resultSub"></div>
+            </div>
+            <div class="result-confidence">
+              <div class="conf-label">KNN Vote</div>
+              <div class="conf-val" id="resultConf"></div>
+            </div>
+          </div>
+          <div class="result-features">
+            <div class="feat-title">Feature Vector Preview</div>
+            <div class="feat-bars" id="featBars"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </div>
@@ -1048,8 +1323,42 @@ function extractFeatures(signal, sr) {
 }
 
 // ═══════════════════════════════════════════════
-//  KNN CLASSIFIER
+//  STANDARD SCALER
 // ═══════════════════════════════════════════════
+class StandardScaler {
+  fit(X) {
+    const n = X.length, p = X[0].length;
+    this.mean_ = new Float64Array(p);
+    this.std_  = new Float64Array(p);
+    for (const x of X) for (let j = 0; j < p; j++) this.mean_[j] += x[j];
+    for (let j = 0; j < p; j++) this.mean_[j] /= n;
+    for (const x of X) for (let j = 0; j < p; j++) this.std_[j] += (x[j] - this.mean_[j]) ** 2;
+    for (let j = 0; j < p; j++) this.std_[j] = Math.sqrt(this.std_[j] / n) || 1;
+    return this;
+  }
+  transform(X) {
+    return X.map(x => {
+      const out = new Float64Array(x.length);
+      for (let j = 0; j < x.length; j++) out[j] = (x[j] - this.mean_[j]) / this.std_[j];
+      return out;
+    });
+  }
+  transformOne(x) {
+    const out = new Float64Array(x.length);
+    for (let j = 0; j < x.length; j++) out[j] = (x[j] - this.mean_[j]) / this.std_[j];
+    return out;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  TRAINED MODEL STORE
+// ═══════════════════════════════════════════════
+let trainedKNN = null;
+let trainedDT  = null;
+let trainedScaler = null;
+let selectedModel = 'knn';
+
+
 class KNN {
   constructor(k = 5) { this.k = k; }
   fit(X, y) { this.X = X; this.y = y; }
@@ -1317,27 +1626,36 @@ async function runTraining() {
   const X_train = trainIdx.map(i=>X[i]), y_train = trainIdx.map(i=>y[i]);
   const X_test  = testIdx.map(i=>X[i]),  y_test  = testIdx.map(i=>y[i]);
 
-  setProgress(55, `Training KNN (k=${k})…`);
+  // === StandardScaler — fit on train only, transform for KNN ===
+  const scaler = new StandardScaler();
+  scaler.fit(X_train);
+  const X_train_scaled = scaler.transform(X_train);
+  const X_test_scaled  = scaler.transform(X_test);
+  trainedScaler = scaler;
+
+  setProgress(55, `Training KNN (k=${k}) with scaled features…`);
   await sleep(10);
 
-  // === STEP 3: KNN ===
+  // === STEP 3: KNN (scaled) ===
   const knn = new KNN(k);
-  knn.fit(X_train, y_train);
-  const knnTrainPred = knn.predict(X_train);
+  knn.fit(X_train_scaled, y_train);
+  const knnTrainPred = knn.predict(X_train_scaled);
   setProgress(65, `Running KNN on test set…`);
   await sleep(0);
-  const knnTestPred  = knn.predict(X_test);
+  const knnTestPred  = knn.predict(X_test_scaled);
+  trainedKNN = knn;
 
-  setProgress(70, `Training Decision Tree…`);
+  setProgress(70, `Training Decision Tree (unscaled)…`);
   await sleep(10);
 
-  // === STEP 4: DT ===
+  // === STEP 4: DT (raw — scaling doesn't affect splits) ===
   const dt = new DecisionTree(Infinity, 2);
   dt.fit(X_train, y_train);
   const dtTrainPred = dt.predict(X_train);
   setProgress(92, `Running DT on test set…`);
   await sleep(0);
   const dtTestPred = dt.predict(X_test);
+  trainedDT = dt;
 
   setProgress(98, `Computing metrics…`);
   await sleep(10);
@@ -1346,7 +1664,7 @@ async function runTraining() {
   const results = [
     {
       name: `KNN`,
-      subtitle: `K-Nearest Neighbors · k = ${k}`,
+      subtitle: `K-Nearest Neighbors · k = ${k} · StandardScaler`,
       train: computeMetrics(y_train, knnTrainPred),
       test:  computeMetrics(y_test,  knnTestPred),
     },
@@ -1364,6 +1682,12 @@ async function runTraining() {
   renderResults(results, trainIdx.length, testIdx.length);
   document.getElementById('progressSection').style.display = 'none';
   document.getElementById('resultsSection').style.display = 'block';
+
+  // Reveal live classifier
+  document.getElementById('classifyNotTrained').style.display = 'none';
+  document.getElementById('classifyControls').style.display = 'block';
+  document.getElementById('classifyResult').style.display = 'none';
+
   btn.disabled = false;
 }
 
@@ -1470,6 +1794,149 @@ function renderResults(results, nTrain, nTest) {
     `;
     grid.appendChild(card);
   }
+}
+
+// ═══════════════════════════════════════════════
+//  LIVE CLASSIFIER
+// ═══════════════════════════════════════════════
+let classifyFile = null;
+
+document.getElementById('classifyFileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  classifyFile = f;
+  const box = document.getElementById('classifyDropZone');
+  box.classList.add('has-file');
+  document.getElementById('classifyFileName').textContent = f.name;
+  document.getElementById('classifyBtn').disabled = false;
+  document.getElementById('classifyResult').style.display = 'none';
+});
+
+document.getElementById('classifyDropZone').addEventListener('dragover', e => {
+  e.preventDefault();
+  document.getElementById('classifyDropZone').style.borderColor = 'var(--accent)';
+});
+document.getElementById('classifyDropZone').addEventListener('dragleave', () => {
+  document.getElementById('classifyDropZone').style.borderColor = '';
+});
+document.getElementById('classifyDropZone').addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('classifyDropZone').style.borderColor = '';
+  const f = e.dataTransfer.files[0];
+  if (!f || !f.name.toLowerCase().endsWith('.wav')) return;
+  classifyFile = f;
+  const box = document.getElementById('classifyDropZone');
+  box.classList.add('has-file');
+  document.getElementById('classifyFileName').textContent = f.name;
+  document.getElementById('classifyBtn').disabled = false;
+  document.getElementById('classifyResult').style.display = 'none';
+});
+
+function selectModel(m) {
+  selectedModel = m;
+  document.getElementById('btnKNN').classList.toggle('active', m === 'knn');
+  document.getElementById('btnDT').classList.toggle('active', m === 'dt');
+  // Update confidence label
+  document.querySelector('.conf-label').textContent = m === 'knn' ? 'KNN Vote' : 'DT Leaf';
+}
+
+async function classifySingle() {
+  if (!classifyFile) return;
+  const model = selectedModel === 'knn' ? trainedKNN : trainedDT;
+  if (!model) { alert('Train a model first.'); return; }
+
+  const btn = document.getElementById('classifyBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processing…';
+
+  try {
+    const {signal, sr} = await decodeWav(classifyFile);
+    const rawFeat = extractFeatures(new Float64Array(signal), sr);
+
+    let feat = rawFeat;
+    let confText = '—';
+
+    if (selectedModel === 'knn') {
+      // Scale for KNN
+      feat = trainedScaler.transformOne(rawFeat);
+      // Vote breakdown
+      const dists = trainedKNN.X.map((xi, i) => {
+        let d = 0;
+        for (let j = 0; j < feat.length; j++) d += (feat[j]-xi[j])**2;
+        return [d, trainedKNN.y[i]];
+      });
+      dists.sort((a,b) => a[0]-b[0]);
+      let votes1 = 0;
+      for (let i = 0; i < trainedKNN.k; i++) if (dists[i][1] === 1) votes1++;
+      confText = `${votes1}/${trainedKNN.k}`;
+    } else {
+      confText = '—';
+      document.querySelector('.conf-label').textContent = 'DT Result';
+    }
+
+    const pred = selectedModel === 'knn'
+      ? trainedKNN.predictOne(feat)
+      : trainedDT.predictOne(trainedDT.root, rawFeat);
+
+    renderClassifyResult(pred, confText, rawFeat);
+  } catch(e) {
+    console.error(e);
+    alert('Error processing file: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⚡ CLASSIFY';
+}
+
+function renderClassifyResult(pred, confText, feat) {
+  const isUnhealthy = pred === 1;
+  const banner   = document.getElementById('resultBanner');
+  const icon     = document.getElementById('resultIcon');
+  const cls      = document.getElementById('resultClass');
+  const sub      = document.getElementById('resultSub');
+  const conf     = document.getElementById('resultConf');
+  const barsDiv  = document.getElementById('featBars');
+  const confLbl  = document.querySelector('.conf-label');
+
+  banner.className = 'result-banner ' + (isUnhealthy ? 'unhealthy' : 'healthy');
+  icon.textContent  = isUnhealthy ? '✕' : '✓';
+  cls.className     = 'verdict-class ' + (isUnhealthy ? 'unhealthy' : 'healthy');
+  cls.textContent   = isUnhealthy ? 'UNHEALTHY' : 'HEALTHY';
+  sub.textContent   = isUnhealthy
+    ? 'Debonding detected — cell likely damaged'
+    : 'No debonding detected — cell appears intact';
+  conf.className    = 'conf-val ' + (isUnhealthy ? 'unhealthy' : 'healthy');
+  conf.textContent  = confText;
+
+  if (selectedModel === 'knn') confLbl.textContent = 'KNN Vote';
+  else confLbl.textContent = 'DT Result';
+
+  // Feature bars — show representative stats
+  const psdBlock  = Array.from(feat.slice(0, 128));
+  const mfccBlock = Array.from(feat.slice(128, 154));
+  const psdMax    = Math.max(...psdBlock);
+  const mfccRange = Math.max(...mfccBlock) - Math.min(...mfccBlock);
+
+  const barItems = [
+    { label: 'PSD Mean',    val: psdBlock.reduce((a,b)=>a+b,0)/128,     max: psdMax,     cls: 'psd-bar',  fmt: v => v.toFixed(2) },
+    { label: 'PSD Peak',    val: psdMax,                                  max: 14,         cls: 'psd-bar',  fmt: v => v.toFixed(2) },
+    { label: 'MFCC[0] mean', val: feat[128],                              max: Math.max(Math.abs(feat[128])*2, 1), cls: 'mfcc-bar', fmt: v => v.toFixed(1) },
+    { label: 'MFCC Spread', val: mfccRange,                               max: Math.max(mfccRange*1.2, 1),  cls: 'mfcc-bar', fmt: v => v.toFixed(1) },
+  ];
+
+  barsDiv.innerHTML = barItems.map(b => {
+    const pct = Math.min(100, Math.max(0, (b.val / b.max) * 100));
+    return `
+      <div class="feat-bar-item">
+        <div class="feat-bar-label"><span>${b.label}</span><span>${b.fmt(b.val)}</span></div>
+        <div class="feat-bar-bg"><div class="feat-bar-fill ${b.cls}" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+
+  const res = document.getElementById('classifyResult');
+  res.style.display = 'block';
+  // Scroll into view
+  res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Init
